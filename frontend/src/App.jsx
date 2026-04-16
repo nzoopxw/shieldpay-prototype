@@ -83,6 +83,7 @@ const css = `
   .btn-outline:hover { background:var(--cream); }
   .btn-green { background:var(--green); color:white; border-color:var(--green); }
   .btn-amber { background:var(--amber); color:white; border-color:var(--amber); }
+  .btn-red { background:var(--red); color:white; border-color:var(--red); }
   .role-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
   .role-opt { border:2px solid var(--border); border-radius:12px; padding:15px 10px; cursor:pointer; text-align:center; transition:all 0.15s; background:white; }
   .role-opt:hover { border-color:var(--ink); }
@@ -131,6 +132,20 @@ const css = `
   @keyframes fadeIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
   .flex-between { display:flex; justify-content:space-between; align-items:center; }
   .pb-nav { padding-bottom:88px; }
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 16px 12px; }
+  .stat-box { background:white; border:1.5px solid var(--border); border-radius:14px; padding:16px; }
+  .stat-box .s-lbl { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:rgba(13,13,13,0.38); margin-bottom:5px; }
+  .stat-box .s-val { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; letter-spacing:-0.5px; }
+  .stat-box .s-sub { font-size:11px; color:rgba(13,13,13,0.4); margin-top:3px; }
+  .risk-pill { display:inline-flex; padding:3px 9px; border-radius:20px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; }
+  .risk-high { background:#fdf0ef; color:var(--red); }
+  .risk-medium { background:var(--amber-light); color:var(--amber); }
+  .risk-low { background:var(--green-muted); color:var(--green); }
+  .fraud-flag { background:var(--red-light); border:1.5px solid var(--red); border-radius:12px; padding:14px; margin-bottom:10px; }
+  .confidence-bar { height:8px; border-radius:4px; background:var(--cream); overflow:hidden; margin:6px 0; }
+  .confidence-fill { height:100%; border-radius:4px; transition:width 0.8s ease; }
+  .admin-header { background:var(--ink); color:white; padding:20px; margin-bottom:0; }
+  .weather-widget { background:linear-gradient(135deg,#1a3a5c,#2563eb); color:white; border-radius:16px; padding:18px; margin:0 16px 12px; }
 `
 
 const PLATFORMS = ["zepto","blinkit","instamart","bigbasket"]
@@ -164,12 +179,8 @@ function Vespa() {
       <line x1="0" y1="62" x2="32" y2="62" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" opacity="0.5"/>
       <line x1="0" y1="71" x2="24" y2="71" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" opacity="0.35"/>
       <line x1="0" y1="79" x2="18" y2="79" stroke="#2563eb" strokeWidth="1" strokeLinecap="round" opacity="0.22"/>
-      <circle cx="44" cy="84" r="22" fill="#1a1a1a"/>
-      <circle cx="44" cy="84" r="14" fill="#2a2a2a"/>
-      <circle cx="44" cy="84" r="5"  fill="#555"/>
-      <circle cx="162" cy="84" r="20" fill="#1a1a1a"/>
-      <circle cx="162" cy="84" r="13" fill="#2a2a2a"/>
-      <circle cx="162" cy="84" r="4"  fill="#555"/>
+      <circle cx="44" cy="84" r="22" fill="#1a1a1a"/><circle cx="44" cy="84" r="14" fill="#2a2a2a"/><circle cx="44" cy="84" r="5" fill="#555"/>
+      <circle cx="162" cy="84" r="20" fill="#1a1a1a"/><circle cx="162" cy="84" r="13" fill="#2a2a2a"/><circle cx="162" cy="84" r="4" fill="#555"/>
       <path d="M58 62 Q68 34 100 32 Q130 30 150 46 L158 62 Q140 68 118 70 L62 70 Z" fill="#2563eb"/>
       <path d="M62 70 L118 70 L116 80 L66 80 Z" fill="#1d4ed8"/>
       <path d="M78 32 Q93 22 114 24 L116 33 Q98 31 82 38 Z" fill="#111"/>
@@ -191,48 +202,41 @@ function Vespa() {
 function Receipt({ result, myPayout, triggerType, zone, onClose }) {
   const [phase, setPhase] = useState("vespa")
   const [lines, setLines] = useState(0)
-  const txId  = "SP" + Date.now().toString().slice(-8).toUpperCase()
+  const txId   = "SP" + Date.now().toString().slice(-8).toUpperCase()
   const upiRef = "UPI" + Math.random().toString(36).slice(2,10).toUpperCase()
   const rows = [
-    {k:"Transaction ID",     v:txId},
-    {k:"UPI Reference",      v:upiRef},
-    {k:"Worker ID",          v:"#"+(myPayout?.worker_id||"—")},
-    {k:"Zone",               v:zone},
-    {k:"Trigger",            v:TNAMES[triggerType]||triggerType},
-    {k:"Order drop",         v:((result?.order_drop_pct||0)*100).toFixed(0)+"% confirmed"},
-    {k:"Severity",           v:result?.severity||"—"},
-    {k:"Timestamp",          v:new Date().toLocaleString("en-IN",{hour12:true,hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"})},
-    {k:"Status",             v:myPayout?.status==="processed"?"PAID":"UNDER REVIEW"},
+    {k:"Transaction ID", v:txId},
+    {k:"UPI Reference",  v:upiRef},
+    {k:"Worker ID",      v:"#"+(myPayout?.worker_id||"—")},
+    {k:"Zone",           v:zone},
+    {k:"Trigger",        v:TNAMES[triggerType]||triggerType},
+    {k:"Order drop",     v:((result?.order_drop_pct||0)*100).toFixed(0)+"% confirmed"},
+    {k:"Severity",       v:result?.severity||"—"},
+    {k:"Timestamp",      v:new Date().toLocaleString("en-IN",{hour12:true,hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"})},
+    {k:"Status",         v:myPayout?.status==="processed"?"PAID":"UNDER REVIEW"},
   ]
-  useEffect(() => { const t = setTimeout(() => setPhase("receipt"), 1600); return () => clearTimeout(t) }, [])
-  useEffect(() => {
-    if (phase !== "receipt") return
-    let i = 0
-    const iv = setInterval(() => { i++; setLines(i); if (i >= rows.length + 4) clearInterval(iv) }, 110)
-    return () => clearInterval(iv)
-  }, [phase])
+  useEffect(()=>{ const t=setTimeout(()=>setPhase("receipt"),1600); return()=>clearTimeout(t) },[])
+  useEffect(()=>{
+    if(phase!=="receipt") return
+    let i=0
+    const iv=setInterval(()=>{ i++; setLines(i); if(i>=rows.length+4) clearInterval(iv) },110)
+    return()=>clearInterval(iv)
+  },[phase])
   return (
     <div className="receipt-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
-      {phase==="vespa" && (
-        <div className="vespa-lane"><div className="vespa-anim"><Vespa/></div></div>
-      )}
-      {phase==="receipt" && (
+      {phase==="vespa"&&<div className="vespa-lane"><div className="vespa-anim"><Vespa/></div></div>}
+      {phase==="receipt"&&(
         <div className="receipt-paper">
-          {lines>0 && <div className="receipt-hdr rline"><div className="receipt-logo">ShieldPay</div><div className="receipt-subtitle">Parametric Payout Receipt</div></div>}
-          {lines>1 && (
+          {lines>0&&<div className="receipt-hdr rline"><div className="receipt-logo">ShieldPay</div><div className="receipt-subtitle">Parametric Payout Receipt</div></div>}
+          {lines>1&&(
             <div className="rline" style={{textAlign:"center",marginBottom:14}}>
               <div style={{fontSize:12,color:"rgba(13,13,13,0.38)",marginBottom:3}}>{myPayout?.status==="processed"?"Amount transferred to UPI":"Amount held for review"}</div>
               <div className="receipt-amt" style={{color:myPayout?.status==="processed"?"var(--green)":"var(--amber)"}}>{"₹"+(myPayout?.amount?.toFixed(0)||"0")}</div>
               <span className="receipt-pill">{myPayout?.status==="processed"?"Paid":"Under review"}</span>
             </div>
           )}
-          {rows.map((r,i)=>lines>i+2&&(
-            <div className="rrow rline" key={r.k}>
-              <span className="rkey">{r.k}</span>
-              <span className="rval">{r.v}</span>
-            </div>
-          ))}
-          {lines>rows.length+2 && (
+          {rows.map((r,i)=>lines>i+2&&<div className="rrow rline" key={r.k}><span className="rkey">{r.k}</span><span className="rval">{r.v}</span></div>)}
+          {lines>rows.length+2&&(
             <div className="receipt-foot rline">
               <div style={{fontSize:11,color:"rgba(13,13,13,0.3)",marginBottom:6}}>No claim filed. No form. Automatic.</div>
               <div className="receipt-bc">{txId} · SHIELDPAY · 2026</div>
@@ -246,7 +250,7 @@ function Receipt({ result, myPayout, triggerType, zone, onClose }) {
 }
 
 function Belt({ rev }) {
-  const items = [...BELT, ...BELT]
+  const items = [...BELT,...BELT]
   return (
     <div className="belt-track">
       <div className="belt-rail"/>
@@ -260,32 +264,44 @@ function Belt({ rev }) {
   )
 }
 
-function Landing({ onEnter }) {
-  const [lifted, setLifted] = useState(false)
-  const [mode, setMode]     = useState("register")
-  const [phone, setPhone]   = useState("")
+function Landing({ onEnter, onAdmin }) {
+  const [mode, setMode]   = useState(null) // null | "worker" | "admin"
+  const [wmode, setWmode] = useState("register")
+  const [phone, setPhone] = useState("")
   const [loading, setLoading] = useState(false)
+
   const go = async () => {
-    if (phone.length < 10) return
+    if(phone.length<10) return
     setLoading(true)
     await new Promise(r=>setTimeout(r,500))
     setLoading(false)
-    onEnter(phone, mode)
+    onEnter(phone, wmode)
   }
+
   return (
     <div style={{position:"relative",minHeight:"100vh",overflow:"hidden"}}>
       <div className="belt-wrapper">
         <div style={{position:"absolute",top:"18%",width:"100%"}}><Belt/></div>
         <div style={{position:"absolute",bottom:"18%",width:"100%"}}><Belt rev/></div>
-        {!lifted && (
-          <div style={{textAlign:"center",zIndex:1,padding:"0 20px"}}>
-            <div style={{fontFamily:"Syne",fontSize:54,fontWeight:800,letterSpacing:"-2px",color:"var(--ink)",lineHeight:0.95}}>Shield<br/>Pay</div>
-            <div style={{fontSize:14,color:"rgba(13,13,13,0.45)",marginTop:12,marginBottom:28}}>Income protection for q-commerce workers</div>
-            <button className="btn btn-primary" onClick={()=>setLifted(true)} style={{width:"auto",padding:"13px 42px",fontSize:15}}>Get started →</button>
+
+        {!mode && (
+          <div style={{textAlign:"center",zIndex:1,padding:"0 24px",width:"100%",maxWidth:400}}>
+            <div style={{fontFamily:"Syne",fontSize:54,fontWeight:800,letterSpacing:"-2px",color:"var(--ink)",lineHeight:0.95,marginBottom:8}}>Shield<br/>Pay</div>
+            <div style={{fontSize:14,color:"rgba(13,13,13,0.45)",marginBottom:36}}>Income protection for q-commerce workers</div>
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              <button className="btn btn-primary" onClick={()=>setMode("worker")} style={{fontSize:16,padding:"16px"}}>
+                🛵 Worker login
+              </button>
+              <button onClick={()=>onAdmin()} style={{width:"100%",padding:"16px",border:"2px solid var(--ink)",borderRadius:12,fontFamily:"Syne",fontSize:16,fontWeight:700,cursor:"pointer",background:"white",color:"var(--ink)",transition:"all 0.15s"}}>
+                📊 Insurer / Admin portal
+              </button>
+            </div>
+            <div style={{marginTop:16,fontSize:11,color:"rgba(13,13,13,0.3)"}}>Guidewire DevTrails 2026 · CosmoCoders</div>
           </div>
         )}
       </div>
-      {lifted && (
+
+      {mode==="worker" && (
         <div className="basket-lift">
           <div className="basket-container">
             <div className="basket-outer">
@@ -296,17 +312,17 @@ function Landing({ onEnter }) {
                   <div style={{fontFamily:"Syne",fontSize:24,fontWeight:800,marginBottom:2}}>ShieldPay</div>
                   <div style={{fontSize:13,color:"rgba(13,13,13,0.4)",marginBottom:20}}>Parametric income protection</div>
                   <div className="tabs" style={{margin:"0 0 16px"}}>
-                    <button className={"tab"+(mode==="register"?" active":"")} onClick={()=>setMode("register")}>Register</button>
-                    <button className={"tab"+(mode==="login"?" active":"")} onClick={()=>setMode("login")}>Sign in</button>
+                    <button className={"tab"+(wmode==="register"?" active":"")} onClick={()=>setWmode("register")}>Register</button>
+                    <button className={"tab"+(wmode==="login"?" active":"")} onClick={()=>setWmode("login")}>Sign in</button>
                   </div>
                   <div className="field">
                     <label>Phone number</label>
                     <input type="tel" placeholder="+91 98765 43210" value={phone} onChange={e=>setPhone(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()}/>
                   </div>
                   <button className="btn btn-primary" onClick={go} disabled={phone.length<10||loading}>
-                    {loading?"Verifying...":mode==="login"?"Sign in →":"Create account →"}
+                    {loading?"Verifying...":wmode==="login"?"Sign in →":"Create account →"}
                   </button>
-                  <div style={{textAlign:"center",marginTop:12,fontSize:11,color:"rgba(13,13,13,0.3)"}}>Guidewire DevTrails 2026</div>
+                  <button onClick={()=>setMode(null)} style={{width:"100%",marginTop:10,background:"none",border:"none",fontSize:12,color:"rgba(13,13,13,0.4)",cursor:"pointer"}}>← Back</button>
                 </div>
               </div>
             </div>
@@ -317,15 +333,307 @@ function Landing({ onEnter }) {
   )
 }
 
+// ── ADMIN DASHBOARD ──────────────────────────────────────────────────────────
+
+function AdminLogin({ onLogin }) {
+  const [pass, setPass] = useState("")
+  const [err, setErr]   = useState("")
+  const attempt = () => {
+    if(pass==="shieldpay2026") onLogin()
+    else setErr("Invalid credentials")
+  }
+  return (
+    <div className="app-shell" style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}>
+      <div style={{width:"100%",padding:"0 24px"}}>
+        <div style={{fontFamily:"Syne",fontSize:28,fontWeight:800,marginBottom:4}}>Insurer Portal</div>
+        <div style={{fontSize:13,color:"rgba(13,13,13,0.45)",marginBottom:28}}>ShieldPay · Admin Access</div>
+        <div className="field"><label>Access code</label>
+          <input type="password" placeholder="Enter access code" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&attempt()}/>
+        </div>
+        {err&&<div className="err">{err}</div>}
+        <button className="btn btn-primary" onClick={attempt}>Access dashboard →</button>
+        <div style={{textAlign:"center",marginTop:12,fontSize:11,color:"rgba(13,13,13,0.3)"}}>Demo code: shieldpay2026</div>
+      </div>
+    </div>
+  )
+}
+
+function AdminDashboard({ onExit }) {
+  const [tab, setTab]         = useState("overview")
+  const [overview, setOverview] = useState(null)
+  const [forecast, setForecast] = useState(null)
+  const [flags, setFlags]     = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [stormZone, setStormZone] = useState("chennai-adyar")
+  const [stormResult, setStormResult] = useState(null)
+  const [stormLoading, setStormLoading] = useState(false)
+
+  useEffect(()=>{
+    Promise.all([
+      axios.get(API+"/admin/overview").catch(()=>null),
+      axios.get(API+"/admin/predictive").catch(()=>null),
+      axios.get(API+"/admin/fraud-flags").catch(()=>null),
+    ]).then(([o,f,fl])=>{
+      setOverview(o?.data)
+      setForecast(f?.data)
+      setFlags(fl?.data)
+      setLoading(false)
+    })
+  },[])
+
+  const fireStorm = async () => {
+    setStormLoading(true); setStormResult(null)
+    try {
+      const r = await axios.post(API+"/weather/simulate-rainstorm",{zone:stormZone,severity:"full"})
+      setStormResult(r.data)
+    } catch(e){ setStormResult({error:e.response?.data?.detail||"Storm trigger failed"}) }
+    setStormLoading(false)
+  }
+
+  if(loading) return (
+    <div className="app-shell" style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}>
+      <div style={{textAlign:"center"}}>
+        <div style={{fontSize:32,marginBottom:12}}>⚡</div>
+        <div style={{fontFamily:"Syne",fontSize:16,fontWeight:700}}>Loading insurer dashboard...</div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="app-shell" style={{paddingBottom:88}}>
+      <div className="nav">
+        <div className="nav-logo">Admin</div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <div style={{fontSize:10,padding:"3px 8px",background:"var(--red-light)",color:"var(--red)",borderRadius:20,fontWeight:700}}>INSURER VIEW</div>
+          <button onClick={onExit} style={{fontSize:11,background:"none",border:"1px solid var(--border)",borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>Exit</button>
+        </div>
+      </div>
+
+      <div className="tabs" style={{marginTop:12}}>
+        {["overview","forecast","fraud","rainstorm"].map(t=>(
+          <button key={t} className={"tab"+(tab===t?" active":"")} onClick={()=>setTab(t)} style={{fontSize:9}}>
+            {t==="overview"?"📊 Overview":t==="forecast"?"🔮 Forecast":t==="fraud"?"🚨 Fraud":"🌧 Demo"}
+          </button>
+        ))}
+      </div>
+
+      {tab==="overview"&&overview&&(
+        <>
+          <div className="stat-grid">
+            {[
+              {l:"Total Workers",v:overview.total_workers,s:"enrolled"},
+              {l:"Active",v:overview.active_workers,s:"with coverage"},
+              {l:"Loss Ratio",v:overview.loss_ratio_pct+"%",s:"claims / premium"},
+              {l:"Fraud Hold Rate",v:overview.fraud_hold_rate_pct+"%",s:"payouts held"},
+            ].map(s=>(
+              <div className="stat-box" key={s.l}>
+                <div className="s-lbl">{s.l}</div>
+                <div className="s-val">{s.v}</div>
+                <div className="s-sub">{s.s}</div>
+              </div>
+            ))}
+          </div>
+          <div className="slabel">Financial overview</div>
+          <div className="card">
+            {[
+              ["Premium collected","₹"+overview.total_premium_collected?.toFixed(0)],
+              ["Total disbursed","₹"+overview.total_disbursed?.toFixed(0)],
+              ["Held for review",overview.held_payouts+" payouts"],
+              ["Triggers fired",overview.total_triggers],
+            ].map(([k,v])=>(
+              <div className="brow" key={k}><span className="blbl">{k}</span><span className="bval">{v}</span></div>
+            ))}
+          </div>
+          <div className="slabel">Zone breakdown</div>
+          {Object.entries(overview.zone_breakdown||{}).map(([zone,data])=>(
+            <div className="card" key={zone} style={{margin:"0 16px 8px"}}>
+              <div style={{fontFamily:"Syne",fontSize:13,fontWeight:700,marginBottom:8}}>{zone}</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {[["Workers",data.workers],["Premium","₹"+data.premium?.toFixed(0)],["Disbursed","₹"+data.disbursed?.toFixed(0)],["Loss ratio",data.loss_ratio_pct+"%"]].map(([k,v])=>(
+                  <div key={k} style={{flex:1,minWidth:70,background:"var(--cream)",borderRadius:8,padding:"8px 10px"}}>
+                    <div style={{fontSize:9,color:"rgba(13,13,13,0.4)",textTransform:"uppercase",letterSpacing:"0.05em"}}>{k}</div>
+                    <div style={{fontFamily:"Syne",fontSize:15,fontWeight:700,marginTop:2}}>{v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {tab==="forecast"&&forecast&&(
+        <>
+          <div className="card" style={{margin:"0 16px 12px",background:"var(--blue-light)",border:"1.5px solid var(--blue)"}}>
+            <div style={{fontSize:13,color:"var(--blue)",lineHeight:1.6}}><strong>Next-week risk forecast.</strong> Adjusted probability uses recent 30-day trigger history to update base rates. Plan your reserve pool accordingly.</div>
+          </div>
+          {Object.entries(forecast.forecasts||{}).map(([city,data])=>(
+            <div key={city}>
+              <div className="slabel">{city.charAt(0).toUpperCase()+city.slice(1)} · {data.workers} workers</div>
+              <div className="card">
+                <div className="brow">
+                  <span className="blbl">Highest risk trigger</span>
+                  <span className="bval">{data.highest_risk}</span>
+                </div>
+                <div className="brow">
+                  <span className="blbl">Avg daily baseline</span>
+                  <span className="bval">₹{data.avg_daily_baseline}</span>
+                </div>
+                {Object.entries(data.trigger_forecasts||{}).map(([ttype,tf])=>(
+                  <div key={ttype} style={{padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
+                    <div className="flex-between" style={{marginBottom:5}}>
+                      <span style={{fontSize:13,textTransform:"capitalize"}}>{ttype.replace("_"," ")}</span>
+                      <span className={"risk-pill risk-"+tf.risk_level}>{tf.risk_level}</span>
+                    </div>
+                    <div className="confidence-bar">
+                      <div className="confidence-fill" style={{width:(tf.adjusted_probability*100)+"%",background:tf.risk_level==="high"?"var(--red)":tf.risk_level==="medium"?"var(--amber)":"var(--green)"}}/>
+                    </div>
+                    <div className="flex-between" style={{marginTop:4}}>
+                      <span style={{fontSize:11,color:"rgba(13,13,13,0.4)"}}>P={tf.adjusted_probability} · {tf.recent_triggers_30d} recent</span>
+                      <span style={{fontSize:11,fontWeight:600}}>₹{tf.expected_payout_pool} reserve</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {tab==="fraud"&&(
+        <>
+          <div className="stat-grid">
+            <div className="stat-box">
+              <div className="s-lbl">Flagged payouts</div>
+              <div className="s-val" style={{color:"var(--red)"}}>{flags?.total_flagged||0}</div>
+              <div className="s-sub">held for review</div>
+            </div>
+            <div className="stat-box">
+              <div className="s-lbl">Hold rate</div>
+              <div className="s-val">{overview?.fraud_hold_rate_pct||0}%</div>
+              <div className="s-sub">of all payouts</div>
+            </div>
+          </div>
+          <div className="slabel">Fraud architecture</div>
+          <div className="card">
+            {[
+              {icon:"📍",title:"GPS zone verification",desc:"Worker GPS cross-checked against registered 2km zone. >5km deviation = 40pt penalty."},
+              {icon:"🌦",title:"Weather claim validation",desc:"Claimed trigger cross-referenced with OpenWeatherMap live data for zone at event time."},
+              {icon:"📈",title:"Claim velocity check",desc:"8+ payouts in 30 days flags syndicate pattern. Genuine workers miss triggers."},
+              {icon:"🎯",title:"Confidence score tiering",desc:"0–100 score determines auto-approve / soft-hold / micro-verify / human review."},
+            ].map(f=>(
+              <div key={f.title} style={{padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
+                <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                  <div style={{fontSize:20}}>{f.icon}</div>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:600,marginBottom:3}}>{f.title}</div>
+                    <div style={{fontSize:12,color:"rgba(13,13,13,0.5)",lineHeight:1.5}}>{f.desc}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="slabel">Flagged payouts</div>
+          {flags?.flags?.length===0&&(
+            <div className="card" style={{textAlign:"center",color:"var(--green)"}}>
+              <div style={{fontSize:28,marginBottom:8}}>✓</div>
+              <div style={{fontWeight:600}}>No fraud flags currently active</div>
+            </div>
+          )}
+          {flags?.flags?.map(f=>(
+            <div className="fraud-flag" key={f.payout_id} style={{margin:"0 16px 8px"}}>
+              <div className="flex-between" style={{marginBottom:6}}>
+                <span style={{fontFamily:"Syne",fontSize:13,fontWeight:700,color:"var(--red)"}}>Payout #{f.payout_id}</span>
+                <span style={{fontSize:11,color:"var(--red)"}}>Worker #{f.worker_id}</span>
+              </div>
+              <div style={{fontSize:12,color:"rgba(13,13,13,0.5)",marginBottom:6}}>{f.zone}</div>
+              <div className="confidence-bar">
+                <div className="confidence-fill" style={{width:(f.fraud_score*10)+"%",background:"var(--red)"}}/>
+              </div>
+              <div className="flex-between" style={{marginTop:4}}>
+                <span style={{fontSize:11,color:"var(--red)"}}>Fraud score: {f.fraud_score}</span>
+                <span style={{fontSize:11}}>₹{f.amount}</span>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {tab==="rainstorm"&&(
+        <>
+          <div className="card" style={{margin:"0 16px 12px",background:"var(--blue-light)",border:"1.5px solid var(--blue)"}}>
+            <div style={{fontSize:13,color:"var(--blue)",lineHeight:1.6}}><strong>Live demo trigger.</strong> Simulate a full rainstorm hitting a zone. The parametric engine auto-detects, verifies the two signals, and fires payouts to all active workers instantly.</div>
+          </div>
+          <div className="card">
+            <div style={{fontFamily:"Syne",fontSize:14,fontWeight:700,marginBottom:13}}>🌧 Simulate rainstorm</div>
+            <div className="field">
+              <label>Target zone</label>
+              <select value={stormZone} onChange={e=>setStormZone(e.target.value)}>
+                {ZONES.map(z=><option key={z} value={z}>{z}</option>)}
+              </select>
+            </div>
+            <button className="btn btn-primary" onClick={fireStorm} disabled={stormLoading}>
+              {stormLoading?"🌧 Storm incoming...":"⚡ Trigger rainstorm → auto-payout"}
+            </button>
+          </div>
+          {stormResult&&!stormResult.error&&(
+            <>
+              <div className="card" style={{margin:"0 16px 12px",background:"var(--green-muted)",border:"1.5px solid var(--green)"}}>
+                <div style={{fontFamily:"Syne",fontSize:16,fontWeight:800,color:"var(--green)",marginBottom:10}}>✓ Parametric trigger fired</div>
+                {[
+                  ["Zone",stormResult.zone],
+                  ["Rainfall",stormResult.weather_data?.rainfall_mm+"mm/hr"],
+                  ["Order drop",(stormResult.order_drop_pct*100).toFixed(0)+"% confirmed"],
+                  ["Workers paid",stormResult.workers_found],
+                  ["Total disbursed","₹"+stormResult.total_disbursed],
+                ].map(([k,v])=>(
+                  <div className="brow" key={k}><span className="blbl">{k}</span><span className="bval" style={{color:"var(--green)"}}>{v}</span></div>
+                ))}
+              </div>
+              <div className="slabel">Individual payouts</div>
+              {stormResult.payouts?.map((p,i)=>(
+                <div className="card" key={i} style={{margin:"0 16px 8px"}}>
+                  <div className="flex-between">
+                    <div>
+                      <div style={{fontSize:13,fontWeight:600}}>Worker #{p.worker_id} · {p.role}</div>
+                      <div style={{fontSize:11,color:"rgba(13,13,13,0.4)",marginTop:2}}>{p.platform} · {p.upi_ref}</div>
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontFamily:"Syne",fontSize:18,fontWeight:800,color:"var(--green)"}}>₹{p.amount}</div>
+                      <div style={{fontSize:10,color:"var(--green)"}}>✓ Paid</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+          {stormResult?.error&&(
+            <div className="err" style={{margin:"0 16px"}}>{stormResult.error}</div>
+          )}
+        </>
+      )}
+
+      <div className="bottom-nav">
+        {[{id:"overview",icon:"📊",label:"Overview"},{id:"forecast",icon:"🔮",label:"Forecast"},{id:"fraud",icon:"🚨",label:"Fraud"},{id:"rainstorm",icon:"🌧",label:"Demo"}].map(n=>(
+          <button key={n.id} className={"bnav-item"+(tab===n.id?" active":"")} onClick={()=>setTab(n.id)}>
+            <span className="ni">{n.icon}</span>{n.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── WORKER SCREENS ────────────────────────────────────────────────────────────
+
 function Onboard({ phone, onDone }) {
-  const [step, setStep] = useState(0)
-  const [role, setRole] = useState("")
-  const [form, setForm] = useState({platform:"",platform_id:"",zone:"",shift:"",experience_weeks:12,income_correction:""})
-  const [tier, setTier] = useState("standard")
+  const [step, setStep]   = useState(0)
+  const [role, setRole]   = useState("")
+  const [form, setForm]   = useState({platform:"",platform_id:"",zone:"",shift:"",experience_weeks:12,income_correction:""})
+  const [tier, setTier]   = useState("standard")
   const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState("")
-  const [worker, setWorker]   = useState(null)
-  const [pdata, setPdata]     = useState(null)
+  const [error, setError] = useState("")
+  const [worker, setWorker] = useState(null)
+  const [pdata, setPdata] = useState(null)
   const set = (k,v) => setForm(f=>({...f,[k]:v}))
   const ri = ROLES.find(r=>r.id===role)
 
@@ -349,7 +657,7 @@ function Onboard({ phone, onDone }) {
 
   const StepNav = ({s}) => <div className="nav"><div className="nav-logo">ShieldPay</div><div style={{fontSize:11,color:"rgba(13,13,13,0.38)"}}>Step {s} of 4</div></div>
 
-  if (step===0) return (
+  if(step===0) return (
     <div className="app-shell">
       <StepNav s={1}/>
       <div style={{padding:"26px 16px 0"}}>
@@ -375,7 +683,7 @@ function Onboard({ phone, onDone }) {
     </div>
   )
 
-  if (step===1) return (
+  if(step===1) return (
     <div className="app-shell">
       <StepNav s={2}/>
       <div style={{padding:"26px 16px 0"}}>
@@ -409,7 +717,7 @@ function Onboard({ phone, onDone }) {
     </div>
   )
 
-  if (step===2) return (
+  if(step===2) return (
     <div className="app-shell">
       <StepNav s={3}/>
       <div style={{padding:"26px 16px 0"}}>
@@ -429,7 +737,7 @@ function Onboard({ phone, onDone }) {
     </div>
   )
 
-  if (step===3&&worker) return (
+  if(step===3&&worker) return (
     <div className="app-shell">
       <StepNav s={4}/>
       <div style={{padding:"26px 16px 0"}}>
@@ -458,7 +766,7 @@ function Onboard({ phone, onDone }) {
     </div>
   )
 
-  if (step===4&&pdata) return (
+  if(step===4&&pdata) return (
     <div className="app-shell" style={{paddingBottom:36}}>
       <div className="nav"><div className="nav-logo">ShieldPay</div><div style={{fontSize:11,color:"rgba(13,13,13,0.38)"}}>Almost there</div></div>
       <div style={{padding:"26px 16px 0"}}>
@@ -489,13 +797,43 @@ function Onboard({ phone, onDone }) {
 function Home({ session }) {
   const { worker, pdata, role, zone, tier } = session
   const ri = ROLES.find(r=>r.id===role)
+  const [earnings, setEarnings] = useState(null)
+  const [weather, setWeather]   = useState(null)
+
+  useEffect(()=>{
+    if(worker?.worker_id) {
+      axios.get(API+"/payout/history/"+worker.worker_id).then(r=>setEarnings(r.data)).catch(()=>{})
+    }
+    if(zone) {
+      axios.get(API+"/weather/check/"+zone).then(r=>setWeather(r.data)).catch(()=>{})
+    }
+  },[])
+
   return (
     <div className="pb-nav">
       <div className="nav">
         <div className="nav-logo">ShieldPay</div>
         <div className={"nav-badge role-"+role}>{ri?.emoji+" "+ri?.name}</div>
       </div>
-      <div className="hero-stat" style={{margin:"16px 16px 0"}}>
+
+      {weather&&(
+        <div className="weather-widget">
+          <div style={{fontSize:10,opacity:0.6,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:4}}>Live zone weather · {zone}</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontFamily:"Syne",fontSize:28,fontWeight:800}}>{weather.temp_c?.toFixed(0)}°C</div>
+              <div style={{fontSize:12,opacity:0.7,marginTop:2}}>{weather.description}</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:13,fontWeight:600}}>{weather.rainfall_mm>0?weather.rainfall_mm+"mm rain":"No rain"}</div>
+              <div style={{fontSize:11,opacity:0.6,marginTop:2}}>{weather.source}</div>
+              {weather.trigger_fired&&<div style={{marginTop:6,background:"rgba(255,255,255,0.2)",borderRadius:8,padding:"4px 8px",fontSize:11,fontWeight:700}}>⚡ Trigger threshold crossed</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="hero-stat" style={{margin:"12px 16px 0"}}>
         <div className="flex-between">
           <div className="lbl">Coverage status</div>
           <div className="policy-active">Active</div>
@@ -503,11 +841,26 @@ function Home({ session }) {
         <div className="amt">{"₹"+(pdata?.weekly_premium?.toFixed(0))}<span style={{fontSize:16,fontWeight:400,opacity:0.55}}>/week</span></div>
         <div style={{fontSize:12,opacity:0.5,marginTop:3}}>{zone+" · "+tier+" tier"}</div>
       </div>
+
+      <div className="stat-grid" style={{marginTop:12}}>
+        <div className="stat-box">
+          <div className="s-lbl">Earnings protected</div>
+          <div className="s-val" style={{color:"var(--green)"}}>{"₹"+(earnings?.earnings_protected?.toFixed(0)||"0")}</div>
+          <div className="s-sub">{earnings?.total_payouts||0} payouts received</div>
+        </div>
+        <div className="stat-box">
+          <div className="s-lbl">Weekly coverage</div>
+          <div className="s-val">{TIER_INFO[tier]?.cov}</div>
+          <div className="s-sub">of lost income</div>
+        </div>
+      </div>
+
       <div className="slabel">Your protection</div>
       <div className="card">
         <div style={{fontSize:13,fontWeight:600,marginBottom:9}}>Covered triggers</div>
         {ROLE_COV[role]?.map(c=><div className="cov-item" key={c}><span className="cov-y">✓</span><span style={{fontSize:13}}>{c}</span></div>)}
       </div>
+
       <div className="slabel">ShieldCredit score</div>
       <div className="fs-bar">
         <div className="flex-between">
@@ -555,37 +908,51 @@ function Policy({ session }) {
 
 function Claims({ session }) {
   const { worker, zone } = session
-  const [tab, setTab]       = useState("live")
-  const [ttype, setTtype]   = useState("rain")
-  const [sev, setSev]       = useState("partial")
-  const [state, setState]   = useState("idle")
+  const [tab, setTab]     = useState("live")
+  const [ttype, setTtype] = useState("rain")
+  const [sev, setSev]     = useState("partial")
+  const [state, setState] = useState("idle")
   const [result, setResult] = useState(null)
-  const [err, setErr]       = useState("")
+  const [err, setErr]     = useState("")
   const [showRec, setShowRec] = useState(false)
-  const [hist, setHist]     = useState([
-    {icon:"🌧",title:"Heavy rain trigger",  date:"Mar 18, 2026",amt:"₹312"},
+  const [fraudResult, setFraudResult] = useState(null)
+  const [hist, setHist]   = useState([
+    {icon:"🌧",title:"Heavy rain trigger",date:"Mar 18, 2026",amt:"₹312"},
     {icon:"🏭",title:"Bandh — city shutdown",date:"Mar 10, 2026",amt:"₹580"},
   ])
-  const [mtype, setMtype]     = useState("")
+  const [mtype, setMtype]   = useState("")
   const [mreason, setMreason] = useState("")
-  const [mloss, setMloss]     = useState("")
-  const [mdone, setMdone]     = useState(false)
-  const [mload, setMload]     = useState(false)
-  const myP = result?.payouts?.find(p=>p.worker_id===worker?.worker_id)
+  const [mloss, setMloss]   = useState("")
+  const [mdone, setMdone]   = useState(false)
+  const [mload, setMload]   = useState(false)
+  const myP    = result?.payouts?.find(p=>p.worker_id===worker?.worker_id)
   const stages = ["monitoring","confirmed","calculating","paid"]
-  const si = stages.indexOf(state)
+  const si     = stages.indexOf(state)
   const stateMsg = {monitoring:"Checking trigger signals...",confirmed:"Trigger confirmed — verifying order drop...",calculating:"Two-signal confirmed — calculating payout...",paid:"Payout processed",blocked:"No payout — conditions not met"}
 
   const fire = async () => {
-    setState("monitoring"); setErr(""); setResult(null); setShowRec(false)
+    setState("monitoring"); setErr(""); setResult(null); setShowRec(false); setFraudResult(null)
     await new Promise(r=>setTimeout(r,1100)); setState("confirmed")
     await new Promise(r=>setTimeout(r,900));  setState("calculating")
     try {
+      // Run fraud check first
+      if(worker?.worker_id) {
+        const fc = await axios.post(API+"/fraud/check",{
+          worker_id: worker.worker_id,
+          trigger_type: ttype,
+          claimed_zone: zone,
+          gps_lat: 13.0012 + (Math.random()-0.5)*0.01,
+          gps_lng: 80.2565 + (Math.random()-0.5)*0.01,
+          gps_accuracy_m: Math.random()*30+5,
+          claim_amount: worker.daily_baseline * 0.5
+        }).catch(()=>null)
+        if(fc?.data) setFraudResult(fc.data)
+      }
       const res = await axios.post(API+"/trigger/simulate",{zone,trigger_type:ttype,severity:sev})
       setResult(res.data)
       await new Promise(r=>setTimeout(r,600)); setState("paid")
       const mp = res.data.payouts?.find(p=>p.worker_id===worker?.worker_id)
-      if (mp?.status==="processed") setHist(h=>[{icon:TICONS[ttype]||"⚠",title:TNAMES[ttype],date:new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}),amt:"₹"+mp.amount.toFixed(0)},...h])
+      if(mp?.status==="processed") setHist(h=>[{icon:TICONS[ttype]||"⚠",title:TNAMES[ttype],date:new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}),amt:"₹"+mp.amount.toFixed(0)},...h])
       setTimeout(()=>setShowRec(true),500)
     } catch(e) {
       setErr(e.response?.data?.detail||"Trigger check failed — order volume drop below 40% threshold.")
@@ -594,13 +961,15 @@ function Claims({ session }) {
   }
 
   const submitManual = async () => {
-    if (!mtype||!mreason) return
+    if(!mtype||!mreason) return
     setMload(true); await new Promise(r=>setTimeout(r,900)); setMload(false); setMdone(true)
   }
 
+  const confidenceColor = (s) => s>=75?"var(--green)":s>=50?"var(--amber)":"var(--red)"
+
   return (
     <div className="pb-nav">
-      {showRec&&result&&<Receipt result={result} myPayout={myP} triggerType={ttype} zone={zone} onClose={()=>{setShowRec(false); setState("idle"); setResult(null); setErr("");}}/>}
+      {showRec&&result&&<Receipt result={result} myPayout={myP} triggerType={ttype} zone={zone} onClose={()=>{setShowRec(false);setState("idle");setResult(null);setErr("");}}/>}
       <div className="nav"><div className="nav-logo">Claims</div><div className="policy-active">Parametric</div></div>
       <div className="tabs">
         <button className={"tab"+(tab==="live"?" active":"")} onClick={()=>setTab("live")}>Live trigger</button>
@@ -636,9 +1005,28 @@ function Claims({ session }) {
               {state==="monitoring"||state==="confirmed"||state==="calculating"?"Processing...":"Fire trigger →"}
             </button>
           </div>
+
+          {fraudResult&&(
+            <div className="card" style={{margin:"0 16px 12px",border:"1.5px solid "+confidenceColor(fraudResult.confidence_score),background:fraudResult.confidence_score>=75?"var(--green-muted)":fraudResult.confidence_score>=50?"var(--amber-light)":"var(--red-light)"}}>
+              <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8,color:confidenceColor(fraudResult.confidence_score)}}>Fraud check · AI confidence score</div>
+              <div className="flex-between" style={{marginBottom:6}}>
+                <span style={{fontFamily:"Syne",fontSize:28,fontWeight:800,color:confidenceColor(fraudResult.confidence_score)}}>{fraudResult.confidence_score}<span style={{fontSize:14}}>/100</span></span>
+                <span style={{fontSize:12,fontWeight:600,color:confidenceColor(fraudResult.confidence_score),textTransform:"capitalize"}}>{fraudResult.decision?.replace("_"," ")}</span>
+              </div>
+              <div className="confidence-bar">
+                <div className="confidence-fill" style={{width:fraudResult.confidence_score+"%",background:confidenceColor(fraudResult.confidence_score)}}/>
+              </div>
+              <div style={{fontSize:12,marginTop:8,color:"rgba(13,13,13,0.6)"}}>{fraudResult.message}</div>
+              {fraudResult.fraud_flags?.length>0&&(
+                <div style={{marginTop:8}}>
+                  {fraudResult.fraud_flags.map(f=><div key={f} style={{fontSize:11,color:"var(--red)",padding:"2px 0"}}>⚠ {f}</div>)}
+                </div>
+              )}
+            </div>
+          )}
+
           {state!=="idle"&&(
-            <div className={"claim-live"+(state==="paid"?" paid":"")+(state==="blocked"?" blocked":"")}
-              style={{borderColor:state==="blocked"?"var(--red)":undefined,background:state==="blocked"?"var(--red-light)":undefined}}>
+            <div className={"claim-live"+(state==="paid"?" paid":"")+(state==="blocked"?" blocked":"")} style={{borderColor:state==="blocked"?"var(--red)":undefined,background:state==="blocked"?"var(--red-light)":undefined}}>
               <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:7,color:state==="blocked"?"var(--red)":state==="paid"?"var(--green)":"var(--amber)"}}>{stateMsg[state]}</div>
               <div style={{display:"flex",gap:5,marginBottom:12}}>
                 {stages.map((s,i)=><div key={s} style={{flex:1,height:4,borderRadius:2,background:si>=i?(state==="blocked"?"var(--red)":"var(--green)"):"rgba(13,13,13,0.1)",transition:"background 0.3s"}}/>)}
@@ -767,15 +1155,19 @@ function Premium({ session }) {
   )
 }
 
+// ── ROOT ─────────────────────────────────────────────────────────────────────
+
 export default function App() {
-  const [screen, setScreen]   = useState("landing")
-  const [phone, setPhone]     = useState("")
+  const [screen, setScreen] = useState("landing")
+  const [phone, setPhone]   = useState("")
   const [session, setSession] = useState(null)
-  const [tab, setTab]         = useState("home")
+  const [tab, setTab]       = useState("home")
   return (
     <>
       <style>{css}</style>
-      {screen==="landing"&&<Landing onEnter={(ph)=>{setPhone(ph);setScreen("onboard")}}/>}
+      {screen==="landing"&&<Landing onEnter={(ph)=>{setPhone(ph);setScreen("onboard")}} onAdmin={()=>setScreen("adminlogin")}/>}
+      {screen==="adminlogin"&&<AdminLogin onLogin={()=>setScreen("admin")}/>}
+      {screen==="admin"&&<AdminDashboard onExit={()=>setScreen("landing")}/>}
       {screen==="onboard"&&<Onboard phone={phone} onDone={s=>{setSession(s);setScreen("app");setTab("home")}}/>}
       {screen==="app"&&session&&(
         <div className="app-shell">
