@@ -6,3 +6,4 @@ joblib
 numpy
 pandas
 python-multipart
+python-dotenv
