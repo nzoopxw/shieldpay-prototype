@@ -146,7 +146,24 @@ const css = `
   .confidence-fill { height:100%; border-radius:4px; transition:width 0.8s ease; }
   .admin-header { background:var(--ink); color:white; padding:20px; margin-bottom:0; }
   .weather-widget { background:linear-gradient(135deg,#1a3a5c,#2563eb); color:white; border-radius:16px; padding:18px; margin:0 16px 12px; }
-`
+  .hamburger { position:relative; }
+  .ham-btn { background:none; border:none; cursor:pointer; padding:6px; display:flex; flex-direction:column; gap:5px; }
+  .ham-line { width:22px; height:2.5px; background:var(--ink); border-radius:2px; transition:all 0.2s; }
+  .ham-menu { position:absolute; right:0; top:42px; background:white; border:1.5px solid var(--border); border-radius:14px; min-width:200px; box-shadow:0 8px 32px rgba(13,13,13,0.12); z-index:200; overflow:hidden; animation:fadeIn 0.15s ease; }
+  .ham-item { display:flex; align-items:center; gap:10px; padding:13px 16px; font-size:14px; cursor:pointer; border-bottom:1px solid var(--border); transition:background 0.1s; }
+  .ham-item:last-child { border-bottom:none; }
+  .ham-item:hover { background:var(--cream); }
+  .ham-item .hi { font-size:18px; }
+  .threshold-meter { background:white; border:1.5px solid var(--border); border-radius:16px; padding:18px; margin:0 16px 12px; }
+  .gauge-track { height:12px; background:var(--cream); border-radius:6px; overflow:visible; position:relative; margin:10px 0; }
+  .gauge-fill { height:100%; border-radius:6px; transition:width 1s ease; position:relative; }
+  .gauge-marker { position:absolute; top:-4px; width:2px; height:20px; background:var(--ink); border-radius:1px; }
+  .gauge-marker-label { position:absolute; top:20px; font-size:9px; font-weight:700; color:var(--ink); transform:translateX(-50%); white-space:nowrap; }
+  .breach-alert { background:var(--red-light); border:2px solid var(--red); border-radius:12px; padding:14px; margin:0 16px 12px; animation:pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+  .auto-fire-bar { height:6px; background:var(--cream); border-radius:3px; overflow:hidden; margin:8px 0; }
+  .auto-fire-fill { height:100%; background:var(--red); border-radius:3px; transition:width 0.1s linear; }
+  `
 
 const PLATFORMS = ["zepto","blinkit","instamart","bigbasket"]
 const SHIFTS    = ["morning","afternoon","night"]
@@ -260,6 +277,151 @@ function Belt({ rev }) {
         </div>
       </div>
       <div className="belt-rail"/>
+    </div>
+  )
+}
+
+function HamburgerMenu({ items, onLogout }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="hamburger">
+      <button className="ham-btn" onClick={()=>setOpen(o=>!o)}>
+        <div className="ham-line"/>
+        <div className="ham-line"/>
+        <div className="ham-line"/>
+      </button>
+      {open&&(
+        <>
+          <div style={{position:"fixed",inset:0,zIndex:199}} onClick={()=>setOpen(false)}/>
+          <div className="ham-menu">
+            {items.map(item=>(
+              <div key={item.label} className="ham-item" onClick={()=>{setOpen(false);item.action()}}>
+                <span className="hi">{item.icon}</span>
+                <span>{item.label}</span>
+              </div>
+            ))}
+            <div className="ham-item" onClick={()=>{setOpen(false);onLogout()}} style={{color:"var(--red)"}}>
+              <span className="hi">🚪</span>
+              <span>Logout</span>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function ThresholdMeter({ zone, onAutoTrigger }) {
+  const [rainfall, setRainfall] = useState(0)
+  const [simulating, setSimulating] = useState(false)
+  const [breached, setBreached] = useState(false)
+  const [autoFiring, setAutoFiring] = useState(false)
+  const [autoProgress, setAutoProgress] = useState(0)
+  const [fired, setFired] = useState(false)
+  const maxRain = 70
+  const partial = 15
+  const full = 50
+
+  const simulate = async () => {
+    if(simulating) return
+    setSimulating(true); setBreached(false); setAutoFiring(false); setAutoProgress(0); setFired(false)
+    let mm = 0
+    // Rise from 0 to 65mm over ~6 seconds
+    const interval = setInterval(() => {
+      mm += 1.8
+      setRainfall(Math.min(mm, 65))
+      if(mm >= partial && mm < partial+2) {
+        // partial threshold crossed
+      }
+      if(mm >= full && !breached) {
+        setBreached(true)
+        clearInterval(interval)
+        // Auto-fire countdown
+        setAutoFiring(true)
+        let progress = 0
+        const countdown = setInterval(() => {
+          progress += 5
+          setAutoProgress(progress)
+          if(progress >= 100) {
+            clearInterval(countdown)
+            setAutoFiring(false)
+            setFired(true)
+            onAutoTrigger(zone)
+          }
+        }, 80)
+      }
+    }, 150)
+  }
+
+  const reset = () => {
+    setRainfall(0); setSimulating(false); setBreached(false)
+    setAutoFiring(false); setAutoProgress(0); setFired(false)
+  }
+
+  const pct = (v) => Math.min(100, (v/maxRain)*100)
+  const rainColor = rainfall < partial ? "var(--blue)" : rainfall < full ? "var(--amber)" : "var(--red)"
+
+  return (
+    <div className="threshold-meter">
+      <div style={{fontFamily:"Syne",fontSize:13,fontWeight:800,marginBottom:4}}>⛈ Live rainfall monitor · {zone}</div>
+      <div style={{fontSize:11,color:"rgba(13,13,13,0.45)",marginBottom:12}}>Parametric engine watches for threshold breach in real time</div>
+
+      {/* Gauge */}
+      <div style={{marginBottom:6}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+          <span style={{fontSize:11,color:"rgba(13,13,13,0.5)"}}>Rainfall intensity</span>
+          <span style={{fontFamily:"Syne",fontSize:14,fontWeight:800,color:rainColor}}>{rainfall.toFixed(1)} mm/hr</span>
+        </div>
+        <div className="gauge-track">
+          <div className="gauge-fill" style={{width:pct(rainfall)+"%",background:rainColor}}/>
+          {/* Partial threshold marker */}
+          <div className="gauge-marker" style={{left:pct(partial)+"%"}}>
+            <div className="gauge-marker-label" style={{color:"var(--amber)"}}>15mm</div>
+          </div>
+          {/* Full threshold marker */}
+          <div className="gauge-marker" style={{left:pct(full)+"%",background:"var(--red)"}}>
+            <div className="gauge-marker-label" style={{color:"var(--red)"}}>50mm ⚡</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{display:"flex",gap:8,marginTop:18,marginBottom:10}}>
+        <div style={{flex:1,background:"var(--amber-light)",borderRadius:8,padding:"8px 10px",textAlign:"center"}}>
+          <div style={{fontSize:9,color:"var(--amber)",fontWeight:700,textTransform:"uppercase"}}>Partial trigger</div>
+          <div style={{fontFamily:"Syne",fontSize:13,fontWeight:800,color:"var(--amber)",marginTop:2}}>&gt;15mm/hr</div>
+          <div style={{fontSize:10,color:"var(--amber)",marginTop:1}}>50% payout</div>
+        </div>
+        <div style={{flex:1,background:"var(--red-light)",borderRadius:8,padding:"8px 10px",textAlign:"center"}}>
+          <div style={{fontSize:9,color:"var(--red)",fontWeight:700,textTransform:"uppercase"}}>Full trigger</div>
+          <div style={{fontFamily:"Syne",fontSize:13,fontWeight:800,color:"var(--red)",marginTop:2}}>&gt;50mm/hr</div>
+          <div style={{fontSize:10,color:"var(--red)",marginTop:1}}>100% payout</div>
+        </div>
+      </div>
+
+      {!simulating&&!fired&&(
+        <button className="btn btn-primary" onClick={simulate}>
+          🌧 Simulate rainstorm → watch auto-trigger
+        </button>
+      )}
+
+      {breached&&autoFiring&&(
+        <div className="breach-alert">
+          <div style={{fontSize:12,fontWeight:700,color:"var(--red)",marginBottom:6}}>⚡ THRESHOLD BREACHED — 65mm/hr detected</div>
+          <div style={{fontSize:11,color:"var(--red)",marginBottom:8}}>Parametric engine auto-firing payout in...</div>
+          <div className="auto-fire-bar">
+            <div className="auto-fire-fill" style={{width:autoProgress+"%"}}/>
+          </div>
+          <div style={{fontSize:11,color:"var(--red)",marginTop:4,fontWeight:600}}>Verifying two signals · Processing payout</div>
+        </div>
+      )}
+
+      {fired&&(
+        <div className="card" style={{margin:0,background:"var(--green-muted)",border:"1.5px solid var(--green)"}}>
+          <div style={{fontFamily:"Syne",fontSize:14,fontWeight:800,color:"var(--green)",marginBottom:6}}>✓ Auto-payout fired</div>
+          <div style={{fontSize:12,color:"var(--green)"}}>Rainfall crossed 50mm threshold. Two signals confirmed. Payout processed automatically — no action required.</div>
+          <button className="btn btn-outline" style={{marginTop:10,fontSize:12,padding:"8px"}} onClick={reset}>Reset meter →</button>
+        </div>
+      )}
     </div>
   )
 }
@@ -405,7 +567,15 @@ function AdminDashboard({ onExit }) {
         <div className="nav-logo">Admin</div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <div style={{fontSize:10,padding:"3px 8px",background:"var(--red-light)",color:"var(--red)",borderRadius:20,fontWeight:700}}>INSURER VIEW</div>
-          <button onClick={onExit} style={{fontSize:11,background:"none",border:"1px solid var(--border)",borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>Exit</button>
+          <HamburgerMenu
+            items={[
+              {icon:"📊",label:"Overview",action:()=>setTab("overview")},
+              {icon:"🔮",label:"Forecast",action:()=>setTab("forecast")},
+              {icon:"🚨",label:"Fraud flags",action:()=>setTab("fraud")},
+              {icon:"🌧",label:"Demo trigger",action:()=>setTab("rainstorm")},
+            ]}
+            onLogout={onExit}
+          />
         </div>
       </div>
 
@@ -794,7 +964,7 @@ function Onboard({ phone, onDone }) {
   return null
 }
 
-function Home({ session }) {
+function Home({ session, onTabChange }) {
   const { worker, pdata, role, zone, tier } = session
   const ri = ROLES.find(r=>r.id===role)
   const [earnings, setEarnings] = useState(null)
@@ -982,6 +1152,22 @@ function Claims({ session }) {
           <div className="card" style={{margin:"0 16px 12px",background:"var(--green-muted)",border:"1.5px solid var(--green)"}}>
             <div style={{fontSize:13,color:"var(--green)",lineHeight:1.6}}><strong>Zero-touch claims.</strong> When a trigger fires and both signals confirm, your payout processes automatically. No form. No call. No waiting.</div>
           </div>
+          <ThresholdMeter zone={zone} onAutoTrigger={async (z)=>{
+            setState("monitoring"); setErr(""); setResult(null); setShowRec(false); setFraudResult(null)
+            await new Promise(r=>setTimeout(r,800)); setState("confirmed")
+            await new Promise(r=>setTimeout(r,700)); setState("calculating")
+            try {
+              const res = await axios.post(API+"/trigger/simulate",{zone:z,trigger_type:"rain",severity:"full"})
+              setResult(res.data)
+              await new Promise(r=>setTimeout(r,500)); setState("paid")
+              const mp = res.data.payouts?.find(p=>p.worker_id===worker?.worker_id)
+              if(mp?.status==="processed") setHist(h=>[{icon:"🌧",title:"Auto-trigger — Heavy rainfall",date:new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}),amt:"₹"+mp.amount.toFixed(0)},...h])
+              setTimeout(()=>setShowRec(true),500)
+            } catch(e) {
+              setErr(e.response?.data?.detail||"Auto-trigger failed.")
+              setState("blocked")
+            }
+          }}/>
           <div className="card">
             <div style={{fontFamily:"Syne",fontSize:14,fontWeight:700,marginBottom:13}}>Simulate disruption trigger</div>
             <div className="field" style={{marginBottom:9}}>
@@ -1162,25 +1348,39 @@ export default function App() {
   const [phone, setPhone]   = useState("")
   const [session, setSession] = useState(null)
   const [tab, setTab]       = useState("home")
+
+  const logout = () => { setSession(null); setScreen("landing"); setTab("home") }
+
   return (
     <>
       <style>{css}</style>
       {screen==="landing"&&<Landing onEnter={(ph)=>{setPhone(ph);setScreen("onboard")}} onAdmin={()=>setScreen("adminlogin")}/>}
       {screen==="adminlogin"&&<AdminLogin onLogin={()=>setScreen("admin")}/>}
-      {screen==="admin"&&<AdminDashboard onExit={()=>setScreen("landing")}/>}
+      {screen==="admin"&&<AdminDashboard onExit={logout}/>}
       {screen==="onboard"&&<Onboard phone={phone} onDone={s=>{setSession(s);setScreen("app");setTab("home")}}/>}
       {screen==="app"&&session&&(
         <div className="app-shell">
-          {tab==="home"   &&<Home    session={session}/>}
-          {tab==="policy" &&<Policy  session={session}/>}
+          {tab==="home"   &&<Home    session={session} onTabChange={setTab}/>}
           {tab==="claims" &&<Claims  session={session}/>}
+          {tab==="policy" &&<Policy  session={session}/>}
           {tab==="premium"&&<Premium session={session}/>}
           <div className="bottom-nav">
-            {[{id:"home",icon:"🏠",label:"Home"},{id:"policy",icon:"📋",label:"Policy"},{id:"claims",icon:"⚡",label:"Claims"},{id:"premium",icon:"📊",label:"Premium"}].map(n=>(
+            {[{id:"home",icon:"🏠",label:"Home"},{id:"claims",icon:"⚡",label:"Claims"}].map(n=>(
               <button key={n.id} className={"bnav-item"+(tab===n.id?" active":"")} onClick={()=>setTab(n.id)}>
                 <span className="ni">{n.icon}</span>{n.label}
               </button>
             ))}
+          </div>
+          {/* Hamburger always visible */}
+          <div style={{position:"fixed",top:16,right:20,zIndex:500}}>
+            <HamburgerMenu
+              items={[
+                {icon:"📋",label:"My Policy",action:()=>setTab("policy")},
+                {icon:"📊",label:"My Premium",action:()=>setTab("premium")},
+                {icon:"📄",label:"Terms & Conditions",action:()=>alert("ShieldPay T&C — parametric payout terms apply per registered zone and tier.")},
+              ]}
+              onLogout={logout}
+            />
           </div>
         </div>
       )}
