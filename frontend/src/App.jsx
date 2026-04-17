@@ -433,7 +433,7 @@ function Landing({ onEnter, onAdmin }) {
   const [loading, setLoading] = useState(false)
 
   const go = async () => {
-    if(phone.length<10) return
+    if(phone.length!==10) return
     setLoading(true)
     await new Promise(r=>setTimeout(r,500))
     setLoading(false)
@@ -479,9 +479,9 @@ function Landing({ onEnter, onAdmin }) {
                   </div>
                   <div className="field">
                     <label>Phone number</label>
-                    <input type="tel" placeholder="+91 98765 43210" value={phone} onChange={e=>setPhone(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()}/>
+                    <input type="tel" placeholder="98765 43210" value={phone} maxLength={10} onChange={e=>setPhone(e.target.value.replace(/\D/g,"").slice(0,10))} onKeyDown={e=>e.key==="Enter"&&go()}/>
                   </div>
-                  <button className="btn btn-primary" onClick={go} disabled={phone.length<10||loading}>
+                  <button className="btn btn-primary" onClick={go} disabled={phone.length!==10||loading}>
                     {loading?"Verifying...":wmode==="login"?"Sign in →":"Create account →"}
                   </button>
                   <button onClick={()=>setMode(null)} style={{width:"100%",marginTop:10,background:"none",border:"none",fontSize:12,color:"rgba(13,13,13,0.4)",cursor:"pointer"}}>← Back</button>
@@ -865,7 +865,23 @@ function Onboard({ phone, onDone }) {
             {PLATFORMS.map(p=><option key={p} value={p}>{p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
           </select>
         </div>
-        <div className="field"><label>Worker ID</label><input placeholder="e.g. ZPT-884921" value={form.platform_id} onChange={e=>set("platform_id",e.target.value)}/></div>
+        <div className="field"><label>Worker ID</label>
+  <input
+    placeholder={form.platform==="zepto"?"ZPT-XXXXXX":form.platform==="blinkit"?"BLK-XXXXXX":form.platform==="instamart"?"INS-XXXXXX":form.platform==="bigbasket"?"BBN-XXXXXX":"Select platform first"}
+    value={form.platform_id}
+    onChange={e=>{
+      const val=e.target.value.toUpperCase()
+      const prefix=form.platform==="zepto"?"ZPT-":form.platform==="blinkit"?"BLK-":form.platform==="instamart"?"INS-":form.platform==="bigbasket"?"BBN-":""
+      if(prefix&&!val.startsWith(prefix)){set("platform_id",prefix);return}
+      set("platform_id",val)
+    }}
+    onFocus={()=>{
+      const prefix=form.platform==="zepto"?"ZPT-":form.platform==="blinkit"?"BLK-":form.platform==="instamart"?"INS-":form.platform==="bigbasket"?"BBN-":""
+      if(prefix&&!form.platform_id)set("platform_id",prefix)
+    }}
+  />
+  {form.platform&&<div style={{fontSize:11,color:"rgba(13,13,13,0.4)",marginTop:4}}>Format: {form.platform==="zepto"?"ZPT-":form.platform==="blinkit"?"BLK-":form.platform==="instamart"?"INS-":"BBN-"}followed by 6 digits</div>}
+</div>
         <div className="field"><label>Dark store zone</label>
           <select value={form.zone} onChange={e=>set("zone",e.target.value)}>
             <option value="">Select zone</option>
