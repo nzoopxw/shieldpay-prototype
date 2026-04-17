@@ -687,6 +687,20 @@ Priya has had zero trigger payouts for 9 consecutive weeks — three full quarte
 
 ---
 
+# Run locally
+
+## Backend
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+
+## Frontend
+cd frontend
+npm install
+npm run dev
+
+
+---
 ## References and further reading
 
 The disruption coefficients, trigger thresholds, and income impact estimates in ShieldPay are prototype-stage approximations. The research below informed our assumptions and validates the core problem we are solving.
